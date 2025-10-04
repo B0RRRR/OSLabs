@@ -1,0 +1,171 @@
+\section{Исходная программа}
+
+
+\subsection*{Файл parent.c}
+
+\begin{lstlisting}[language=C,caption={Код программы родительского процесса},captionpos=b]
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+#include <errno.h>
+
+int main() {
+    char filename[256];
+    // fd for parent -> children
+    int pipefd[2];
+    pid_t pid;
+
+    if (pipe(pipefd) == -1) {
+        fprintf(stderr, "Failed to create pipe\n");
+        return -1;
+    }
+
+    printf("Filename:\n");
+    if (scanf("%255s", filename) != 1) {
+        fprintf(stderr, "Incorrect file name\n");
+        return -1;
+    }
+
+    int fd_file = open(filename, O_RDONLY);
+    if (fd_file == -1) {
+        fprintf(stderr, "Failed to open file\n");
+        return -1;
+    }
+
+    pid = fork();
+    if (pid < 0) {
+        fprintf(stderr, "Fork failed\n");
+        close(fd_file);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return -1;
+    }
+
+    if (pid == 0) {
+        // Close pip for reading
+        close(pipefd[0]);
+
+        // input -> file
+        if (dup2(fd_file, STDIN_FILENO) == -1) {
+            fprintf(stderr, "dup2(fd_file->stdin) failed:\n");
+            return -1;
+        }
+
+        // child proc -> pipe
+        if (dup2(pipefd[1], STDOUT_FILENO) == -1) {
+            fprintf(stderr, "dup2(pipe_write->stdout) failed:\n");
+            return -1;
+        }
+
+        close(fd_file);
+        close(pipefd[1]);
+
+        // proc -> child
+        char *argv[] = {"./child", NULL};
+        execv(argv[0], argv);
+
+        fprintf(stderr, "execv failed:\n");
+        return -1;
+    } else {
+        // close fd for writing
+        close(pipefd[1]);
+        close(fd_file);
+
+        // Any answer in terminal
+        ssize_t n;
+        char buffer[4096];
+        while ((n = read(pipefd[0], buffer, sizeof(buffer))) > 0) {
+            ssize_t out = 0;
+            while (out < n) {
+                ssize_t w = write(STDOUT_FILENO, buffer + out, n - out);
+                if (w == -1) {
+                    perror("write");
+                    break;
+                }
+                out += w;
+            }
+        }
+          
+    if (n == -1) {
+        fprintf(stderr, "Failed read from pipe");
+    }
+
+    close(pipefd[0]);
+    if (wait(NULL) == -1) {
+        perror("wait");
+    }
+
+    }
+
+    return 0;
+}
+\end{lstlisting}
+
+\subsection*{Файл child.c}
+
+\begin{lstlisting}[language=C,caption={Код программы дочернего процесса},captionpos=b]
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    float x, sum = 0.0f;
+    int read_count = 0;   // count numbers in str
+    int c;
+
+    while (1) {
+        int r = scanf("%f", &x);
+
+        if (r == 1) {
+            sum += x;
+            read_count++;
+        } else if (r == EOF) {
+            // end of file
+            if (read_count > 0) {
+                printf("Sum: %.2f\n", sum);
+            }
+            break;
+        } else {
+            /* scanf cant read number */
+            printf("Not number in file!\n");
+            return -1;
+        }
+
+        // If next tab, space or n
+        c = getchar();
+        if (c == '\n' || c == EOF) {
+            if (read_count > 0) {
+                printf("Sum: %.2f\n", sum);
+                sum = 0.0f;
+                read_count = 0;
+            }
+            if (c == EOF) break;
+        } else if (c == ' ' || c == '\t' || c == '\r') {
+            // Correct symbols
+        } else {
+            // Incorrect Symbol
+            printf("Error: Incorrect Symbol '%c'\n", c);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+\end{lstlisting}
+
+\section{Вывод strace}
+
+\begin{verbatim}
+execve("./parent", ["./parent"], 0x7fff77b42d10) = 0
+pipe2([3, 4], 0) = 0
+write(1, "Filename:\n", 10) = 10
+read(0, "input.txt\n", 1024) = 10
+openat(AT_FDCWD, "input.txt", O_RDONLY) = 5
+clone(...) = 6474
+read(3, "Sum: 3354.30\n", 4096) = 13
+write(1, "Sum: 3354.30\n", 13) = 13
+--- SIGCHLD --- 
+wait4(-1, NULL, 0, NULL) = 6474
+\end{verbatim}

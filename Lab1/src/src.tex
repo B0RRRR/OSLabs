@@ -1,0 +1,78 @@
+\section{Метод решения}
+Задача заключается в организации взаимодействия между двумя процессами в операционной системе Linux с помощью системных вызовов и канала (\texttt{pipe}).
+\subsection*{Архитектура}
+\textbf{Родительский процесс (parent.c):}
+\begin{enumerate}
+    \item Запрашивает у пользователя имя входного файла.
+    \item Создаёт канал (\texttt{pipe}).
+    \item Создаёт дочерний процесс (\texttt{fork}).
+    \item В дочернем процессе перенаправляет стандартный ввод на файл, а стандартный вывод на запись в канал (\texttt{dup2}).
+    \item Запускает дочернюю программу \texttt{child.c} через \texttt{execv}.
+    \item Считывает из канала результаты, которые формирует дочерний процесс, и выводит их в терминал.
+    \item Ждёт завершения дочернего процесса (\texttt{waitpid}).
+\end{enumerate}
+
+\textbf{Дочерний процесс (child.c):}
+\begin{enumerate}
+    \item Считывает данные из стандартного ввода (перенаправленного на файл).
+    \item Обрабатывает построчно входные данные.
+    \item Для каждой строки суммирует числа.
+    \item Выводит результат в стандартный вывод, который перенаправлен в канал.
+\end{enumerate}
+
+\subsection*{Внешние источники}
+\begin{enumerate}
+    \item man-страницы Linux (\texttt{man 2 fork}, \texttt{man 2 pipe}, \texttt{man 2 dup2}, \texttt{man 3 scanf}).
+    \item Документация GNU C Library.
+\end{enumerate}
+
+\section{Описание программы}
+
+\subsection*{Файл \texttt{parent.c}}
+\textbf{Основные шаги:}
+\begin{itemize}
+    \item \texttt{scanf} — получение имени файла от пользователя.
+    \item \texttt{pipe} — создание неименованного канала.
+    \item \texttt{fork} — создание дочернего процесса.
+\end{itemize}
+
+\textbf{В дочернем процессе:}
+\begin{itemize}
+    \item \texttt{open} — открытие файла.
+    \item \texttt{dup2} — переназначение стандартного ввода на файл, стандартного вывода на канал.
+    \item \texttt{execv} — замена текущего образа процесса на \texttt{child}.
+\end{itemize}
+
+\textbf{В родительском процессе:}
+\begin{itemize}
+    \item \texttt{read} — чтение данных из канала.
+    \item \texttt{write} — вывод в стандартный вывод (экран).
+    \item \texttt{waitpid} — ожидание завершения дочернего процесса.
+\end{itemize}
+
+\textbf{Системные вызовы:}
+\begin{itemize}
+    \item \texttt{pipe(int pipefd[2])} — создаёт канал для обмена данными между процессами.
+    \item \texttt{fork(void)} — создаёт копию текущего процесса.
+    \item \texttt{open(const char *pathname, int flags, mode\_t mode)} — открывает файл.
+    \item \texttt{dup2(int oldfd, int newfd)} — перенаправляет один файловый дескриптор в другой.
+    \item \texttt{execv(const char *path, char *const argv[])} — запускает новую программу в текущем процессе.
+    \item \texttt{close(int fd)} — закрывает файловый дескриптор.
+    \item \texttt{read(int fd, void *buf, size\_t count)} — читает данные из файла или канала.
+    \item \texttt{write(int fd, const void *buf, size\_t count)} — записывает данные в файл или канал.
+\end{itemize}
+
+\subsection*{Файл \texttt{child.c}}
+\textbf{Функции и логика:}
+\begin{itemize}
+    \item Чтение строк из \texttt{stdin} (перенаправленного на файл).
+    \item Подсчёт суммы чисел строки.
+    \item Проверка ошибок.
+    \item Вывод результата в \texttt{stdout} (перенаправлен в \texttt{pipe}).
+\end{itemize}
+
+\textbf{Системные вызовы:}
+\begin{itemize}
+    \item \texttt{getchar} — чтение символов/чисел.
+    \item \texttt{printf} — вывод результата.
+\end{itemize}
