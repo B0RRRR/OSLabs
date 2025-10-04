@@ -1,0 +1,10 @@
+Компиляция:
+gcc -o parent Lab1/inc/parent.c
+gcc -o child Lab1/inc/child.c
+
+Запуск:
+./parent
+
+Latex:
+make pdf
+make clean
