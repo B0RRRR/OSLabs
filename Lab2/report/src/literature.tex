@@ -1,0 +1,208 @@
+\section{Исходная программа}
+
+
+\subsection*{Файл filterworker.c}
+
+\begin{lstlisting}[language=C,caption={Работа с потоками},captionpos=b]
+#include "filter_worker.h"
+#include <float.h>
+
+static inline float min_in_3x3(float **mat, int M, int N, int i, int j) {
+    float min_val = FLT_MAX;
+    for (int di = -1; di <= 1; di++)
+        for (int dj = -1; dj <= 1; dj++) {
+            int ni = i + di;
+            int nj = j + dj;
+            if (ni >= 0 && ni < M && nj >= 0 && nj < N)
+                if (mat[ni][nj] < min_val)
+                    min_val = mat[ni][nj];
+        }
+    return min_val;
+}
+
+static inline float max_in_3x3(float **mat, int M, int N, int i, int j) {
+    float max_val = -FLT_MAX;
+    for (int di = -1; di <= 1; di++)
+        for (int dj = -1; dj <= 1; dj++) {
+            int ni = i + di;
+            int nj = j + dj;
+            if (ni >= 0 && ni < M && nj >= 0 && nj < N)
+                if (mat[ni][nj] > max_val)
+                    max_val = mat[ni][nj];
+        }
+    return max_val;
+}
+
+void* apply_filter_static(void* arg) {
+    ThreadWork *data = (ThreadWork*)arg;
+
+    for (int rep = 0; rep < data->K; rep++) {
+        for (int i = data->start_row; i < data->end_row; i++)
+            for (int j = 0; j < data->N; j++) {
+                data->erosion_result[i][j] = min_in_3x3(data->input, data->M, data->N, i, j);
+                data->dilation_result[i][j] = max_in_3x3(data->input, data->M, data->N, i, j);
+            }
+    }
+    return NULL;
+}
+
+\end{lstlisting}
+
+\subsection*{Файл matrixutils.c}
+
+\begin{lstlisting}[language=C,caption={Работа с матрицами},captionpos=b]
+#include "matrix_utils.h"
+#include <stdio.h>
+#include <time.h>
+
+float** create_matrix(int M, int N) {
+    float **mat = malloc(M * sizeof(float*));
+    for (int i = 0; i < M; i++)
+        mat[i] = malloc(N * sizeof(float));
+    return mat;
+}
+
+void fill_matrix(float** mat, int M, int N) {
+    srand(time(NULL));
+    for (int i = 0; i < M; i++)
+        for (int j = 0; j < N; j++)
+            mat[i][j] = (float)(rand()) / RAND_MAX;
+}
+
+void free_matrix(float** mat, int M) {
+    for (int i = 0; i < M; i++)
+        free(mat[i]);
+    free(mat);
+}
+
+\end{lstlisting}
+
+\subsection*{Файл matrixfilters.c}
+
+\begin{lstlisting}[language=C,caption={Обработка ввода, подсчет времени},captionpos=b]
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include "matrix_utils.h"
+#include "filter_worker.h"
+#include "timer.h"
+#include "matrix_filters.h"
+
+static double run_filters_static(int M, int N, int K, int num_threads) {
+    float **mat = create_matrix(M, N);
+    float **erosion = create_matrix(M, N);
+    float **dilation = create_matrix(M, N);
+    fill_matrix(mat, M, N);
+
+    pthread_t *threads = malloc(num_threads * sizeof(pthread_t));
+    ThreadWork *thread_data = malloc(num_threads * sizeof(ThreadWork));
+
+    int rows_per_thread = M / num_threads;
+    int extra = M % num_threads;
+    int row_start = 0;
+
+    double start = get_time_sec();
+
+    for (int t = 0; t < num_threads; t++) {
+        int row_end = row_start + rows_per_thread + (t < extra ? 1 : 0);
+        thread_data[t].input = mat;
+        thread_data[t].erosion_result = erosion;
+        thread_data[t].dilation_result = dilation;
+        thread_data[t].M = M;
+        thread_data[t].N = N;
+        thread_data[t].K = K;
+        thread_data[t].start_row = row_start;
+        thread_data[t].end_row = row_end;
+        pthread_create(&threads[t], NULL, apply_filter_static, &thread_data[t]);
+        row_start = row_end;
+    }
+
+    for (int t = 0; t < num_threads; t++)
+        pthread_join(threads[t], NULL);
+
+    double end = get_time_sec();
+
+    free_matrix(mat, M);
+    free_matrix(erosion, M);
+    free_matrix(dilation, M);
+    free(threads);
+    free(thread_data);
+
+    return end - start;
+}
+
+int run_matrix_filters(int argc, char *argv[]) {
+    if (argc < 5) {
+        return 1;
+    }
+
+    int M = atoi(argv[1]);
+    int N = atoi(argv[2]);
+    int K = atoi(argv[3]);
+    int Tmax = atoi(argv[4]);
+
+    FILE *f = fopen("results.csv", "w");
+    if (!f) {
+        perror("Error create results.csv");
+        return 1;
+    }
+    fprintf(f, "threads,time\n");
+
+    for (int threads = 1; threads <= Tmax; threads *= 2) {
+        double T = run_filters_static(M, N, K, threads);
+        fprintf(f, "%d,%.6f\n", threads, T);
+        printf("flow: %d, time: %.6f sec\n", threads, T);
+    }
+
+    fclose(f);
+    printf("Results in  results.csv\n");
+    return 0;
+}
+
+\end{lstlisting}
+
+\subsection*{Файл main.c}
+
+\begin{lstlisting}[language=C,caption={Файл main.c},captionpos=b]
+#include "matrix_utils.h"
+#include <stdio.h>
+#include <time.h>
+
+float** create_matrix(int M, int N) {
+    float **mat = malloc(M * sizeof(float*));
+    for (int i = 0; i < M; i++)
+        mat[i] = malloc(N * sizeof(float));
+    return mat;
+}
+
+void fill_matrix(float** mat, int M, int N) {
+    srand(time(NULL));
+    for (int i = 0; i < M; i++)
+        for (int j = 0; j < N; j++)
+            mat[i][j] = (float)(rand()) / RAND_MAX;
+}
+
+void free_matrix(float** mat, int M) {
+    for (int i = 0; i < M; i++)
+        free(mat[i]);
+    free(mat);
+}
+
+\end{lstlisting}
+
+\section{Вывод strace}
+
+\begin{verbatim}
+execve("./matrix_filters", ["./matrix_filters", "1000", "1000", "5", "4"], ...)
+brk(NULL)
+mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC)
+mmap(...)
+clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|...})
+futex(0x..., FUTEX_WAIT_BITSET|FUTEX_CLOCK_REALTIME, tid, NULL, FUTEX_BITSET_MATCH_ANY)
+openat(AT_FDCWD, "results.csv", O_WRONLY|O_CREAT|O_TRUNC, 0666)
+write(3, "threads,time\n1,0.372066\n...", 46)
+write(1, "Потоков: 1, время: 0.372066 сек", 47)
+close(3)
+exit_group(0)    
+\end{verbatim}

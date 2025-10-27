@@ -1,2 +1,7 @@
 .vscode/
 .git/
+.aux
+.fls
+.log
+.out
+.gz
