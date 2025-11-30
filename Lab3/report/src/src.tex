@@ -1,0 +1,126 @@
+\section{Метод решения}
+
+Задача заключается в межпроцессном взаимодействии двух процессов (родительского и дочернего) с использованием разделяемой памяти, сигналов и простого протокола синхронизации.  
+Родительский процесс читает команды, передаёт их дочернему через общий сегмент памяти и ожидает ответа.  
+Дочерний процесс обрабатывает команды и возвращает результат родителю.
+
+\subsection*{Архитектура программы}
+
+\dirtree{%
+.1 Lab3/.
+.2 inc/.
+.3 ipc\_shm.h.
+.3 parser.h.
+.3 signals.h.
+.2 src/.
+.3 ipc\_shm.c.
+.3 main.c.
+.3 parser.c.
+.3 signals.c.
+.2 Makefile.
+}
+
+\vspace{5mm}
+
+\section{Описание программы}
+
+\subsection*{Файл \texttt{main.c}}
+
+\textbf{Назначение:}  
+Главный модуль программы, отвечающий за создание процессов, настройку сигналов, и взаимодействие через разделяемую память.
+
+\textbf{Функции и логика:}
+\begin{itemize}
+    \item Инициализирует разделяемую память с помощью \texttt{ipc\_shm\_init()}.
+    \item Создаёт дочерний процесс через \texttt{fork()}.
+    \item Устанавливает обработчики сигналов для \texttt{SIGUSR1} и \texttt{SIGUSR2}.
+    \item Родительский процесс:
+    \begin{itemize}
+        \item Считывает ввод пользователя.
+        \item Записывает команду в разделяемую память.
+        \item Посылает дочернему процессу сигнал \texttt{SIGUSR1}.
+        \item Ожидает сигнал \texttt{SIGUSR2}, означающий готовность ответа.
+        \item Выводит результат, прочитанный из общей памяти.
+    \end{itemize}
+    \item Дочерний процесс:
+    \begin{itemize}
+        \item После получения сигнала \texttt{SIGUSR1} извлекает команду.
+        \item Передаёт её модулю парсинга \texttt{parse\_command()}.
+        \item Записывает полученный результат обратно в shared memory.
+        \item Посылает родителю сигнал \texttt{SIGUSR2}.
+    \end{itemize}
+    \item После завершения работы очищает ресурсы shared memory.
+\end{itemize}
+
+
+\subsection*{Файл \texttt{ipc\_shm.c}}
+
+\textbf{Назначение:}  
+Реализует операции работы с POSIX shared memory.
+
+\textbf{Функции:}
+\begin{itemize}
+    \item \texttt{ipc\_shm\_init()} — создаёт или открывает сегмент shared memory, задаёт размер, отображает его в адресное пространство.
+    \item \texttt{ipc\_shm\_get()} — возвращает указатель на структуру общей памяти (команда, ответ, флаг).
+    \item \texttt{ipc\_shm\_destroy()} — отсоединяет память и удаляет объект.
+\end{itemize}
+
+
+\subsection*{Файл \texttt{parser.c}}
+
+\textbf{Назначение:}  
+Анализирует текстовые команды и выполняет вычисления.
+
+\textbf{Функции:}
+\begin{itemize}
+    \item \texttt{parse\_command()} — определяет тип команды и вызывает нужный обработчик.
+    \item Обработчики:
+    \begin{itemize}
+        \item \texttt{cmd\_add()}, \texttt{cmd\_sub()}, \texttt{cmd\_mul()}, \texttt{cmd\_div()} — арифметические операции.
+        \item \texttt{cmd\_reverse()} — разворот строки.
+        \item \texttt{cmd\_help()} — вывод списка команд.
+    \end{itemize}
+    \item Формирует строку результата для передачи родителю.
+\end{itemize}
+
+
+\subsection*{Файл \texttt{signals.c}}
+
+\textbf{Назначение:}  
+Устанавливает обработчики сигналов и определяет реакцию процессов на сигналы.
+
+\textbf{Функции:}
+\begin{itemize}
+    \item \texttt{install\_handler(signum, handler)} — универсальная установка обработчика сигнала.
+    \item Обработчики:
+    \begin{itemize}
+        \item \texttt{on\_parent\_signal()} — обработка сигнала \texttt{SIGUSR2} родителем.
+        \item \texttt{on\_child\_signal()} — обработка сигнала \texttt{SIGUSR1} дочерним процессом.
+    \end{itemize}
+\end{itemize}
+
+
+\subsection*{Файл \texttt{commands.c}}
+
+\textbf{Назначение:}  
+Содержит низкоуровневые функции, выполняющие конкретные команды.
+
+\textbf{Функции:}
+\begin{itemize}
+    \item Реализация математических операций.
+    \item Операции со строками.
+    \item Формирование сообщений об ошибках.
+\end{itemize}
+
+\subsection*{Файл \texttt{ipc\_shm.h}}
+
+\textbf{Структура данных:}
+
+\begin{verbatim}
+typedef struct {
+    char command[256];
+    char response[256];
+    volatile int flag; // 0 - свободно, 1 - команда готова, 2 - ответ готов
+} shm_area_t;
+\end{verbatim}
+

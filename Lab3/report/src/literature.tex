@@ -1,0 +1,257 @@
+\section{Исходная программа}
+
+
+\subsection*{Файл ipc\_shm.c}
+
+\begin{lstlisting}[language=C,caption={Работа с POSIX shared memory},captionpos=b]
+#include "ipc_shm.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+
+
+struct shm* ipc_shm_init(void) {
+    int fd = open(SHM_PATH, O_RDWR | O_CREAT, 0600);
+    if (fd == -1) {
+        fprintf(stderr, "open(%s) failed: %s\n", SHM_PATH, strerror(errno));
+        return NULL;
+    }
+
+    if (ftruncate(fd, SHM_SIZE) == -1) {
+        fprintf(stderr, "ftruncate failed: %s\n", strerror(errno));
+        close(fd);
+        return NULL;
+    }
+
+    struct shm *area = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (area == MAP_FAILED) {
+        fprintf(stderr, "mmap failed: %s\n", strerror(errno));
+        close(fd);
+        return NULL;
+    }
+    close(fd);
+
+    area->flag = 0;
+    memset(area->buf, 0, sizeof(area->buf));
+    return area;
+}
+
+void ipc_shm_cleanup(struct shm *area) {
+    if (!area) return;
+    munmap(area, SHM_SIZE);
+    unlink(SHM_PATH);
+}
+
+\end{lstlisting}
+
+\subsection*{Файл main.c}
+
+\begin{lstlisting}[language=C,caption={Создание процессов, настройка сигналов},captionpos=b]
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <signal.h>
+
+
+#include "ipc_shm.h"
+#include "parser.h"
+#include "signals.h"
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        fprintf(stderr, "Использование: %s input_file\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    struct shm *area = ipc_shm_init();
+    if (!area) return EXIT_FAILURE;
+
+    pid_t child = fork();
+    if (child == -1) {
+        perror("fork");
+        ipc_shm_cleanup(area);
+        return EXIT_FAILURE;
+    }
+
+    if (child == 0) {
+        /* Дочерний процесс */
+        pid_t parent_pid = getppid();
+        install_handler(SIGUSR1, child_sigusr1_handler);
+
+        while (1) {
+            while (!child_got_signal) pause();
+            child_got_signal = 0;
+
+            int f = area->flag;
+            if (f == 1) {
+                char local[BUF_SIZE];
+                strncpy(local, area->buf, BUF_SIZE-1);
+                local[BUF_SIZE-1] = '\0';
+
+                double sum;
+                int res = sum_floats_in_str(local, &sum);
+                if (res == 0)
+                    printf("PID %d: сумма = %.6f\n", getpid(), (float)sum);
+                else if (res == 1)
+                    printf("PID %d: нет чисел\n", getpid());
+                else
+                    fprintf(stderr, "PID %d: ошибка парсинга\n", getpid());
+                fflush(stdout);
+
+                area->flag = 0;
+                kill(parent_pid, SIGUSR2);
+            } else if (f == 2) break;
+        }
+
+        ipc_shm_cleanup(area);
+        return EXIT_SUCCESS;
+    } else {
+        /* Родительский процесс */
+        install_handler(SIGUSR2, parent_sigusr2_handler);
+
+        FILE *fin = fopen(argv[1], "r");
+        if (!fin) {
+            perror("fopen");
+            area->flag = 2;
+            kill(child, SIGUSR1);
+            waitpid(child, NULL, 0);
+            ipc_shm_cleanup(area);
+            return EXIT_FAILURE;
+        }
+
+        char line[BUF_SIZE];
+        while (fgets(line, sizeof(line), fin)) {
+            while (area->flag != 0) usleep(1000);
+
+            strncpy(area->buf, line, BUF_SIZE-1);
+            area->buf[BUF_SIZE-1] = '\0';
+            area->flag = 1;
+            kill(child, SIGUSR1);
+
+            while (!parent_notified) usleep(1000);
+            parent_notified = 0;
+        }
+
+        fclose(fin);
+        area->flag = 2;
+        kill(child, SIGUSR1);
+        waitpid(child, NULL, 0);
+        ipc_shm_cleanup(area);
+    }
+
+    return EXIT_SUCCESS;
+}
+
+\end{lstlisting}
+
+\subsection*{Файл parser.c}
+
+\begin{lstlisting}[language=C,caption={Работа с файлом},captionpos=b]
+#include "parser.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+int sum_floats_in_str(const char *s, double *out_sum) {
+    if (!s || !out_sum) return -1;
+    *out_sum = 0.0;
+    const char *p = s;
+    char *end;
+    int found = 0;
+
+    while (*p != '\0') {
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+        if (*p == '\0') break;
+
+        double val = strtod(p, &end);
+        if (end == p) { p++; continue; }
+        *out_sum += val;
+        found = 1;
+        p = end;
+    }
+    return found ? 0 : 1;
+}
+
+\end{lstlisting}
+
+\subsection*{Файл signals.c}
+
+\begin{lstlisting}[language=C,caption={Обработка сигналов},captionpos=b]
+#define _POSIX_C_SOURCE 200809L
+
+#include "signals.h"
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
+volatile sig_atomic_t parent_notified = 0;
+volatile sig_atomic_t child_got_signal = 0;
+
+void parent_sigusr2_handler(int sig) {
+    (void)sig;
+    parent_notified = 1;
+}
+
+void child_sigusr1_handler(int sig) {
+    (void)sig;
+    child_got_signal = 1;
+}
+
+void install_handler(int signum, void (*handler)(int)) {
+    struct sigaction sa;
+    sa.sa_handler = handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(signum, &sa, NULL) == -1) {
+        fprintf(stderr, "sigaction(%d) failed: %s\n", signum, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+}
+
+\end{lstlisting}
+
+\section{Вывод strace}
+
+\begin{verbatim}
+execve("./ipc_program", ["./ipc_program"], 0x7ffcca0c1630 /* 27 vars */) = 0
+brk(NULL)                               = 0x5ea37c54b000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x76058ef9f000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=30255, ...}) = 0
+mmap(NULL, 30255, PROT_READ, MAP_PRIVATE, 3, 0) = 0x76058ef97000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x76058ec00000
+mmap(0x76058ec28000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x76058ec28000
+mmap(0x76058edb0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x76058edb0000
+mmap(0x76058edff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x76058edff000
+mmap(0x76058ee05000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x76058ee05000
+close(3)                                = 0
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x76058ef94000
+arch_prctl(ARCH_SET_FS, 0x76058ef94740) = 0
+set_tid_address(0x76058ef94a10)         = 1482
+set_robust_list(0x76058ef94a20, 24)     = 0
+rseq(0x76058ef95060, 0x20, 0, 0x53053053) = 0
+mprotect(0x76058edff000, 16384, PROT_READ) = 0
+mprotect(0x5ea33ed8e000, 4096, PROT_READ) = 0
+mprotect(0x76058efd7000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x76058ef97000, 30255)           = 0
+write(2, "\320\230\321\201\320\277\320\276\320\273\321\214\320\267\320\276\320\262\320\260\320\275\320\270\320\265: ./ip"..., 53Использование: ./ipc_program input_file
+) = 53
+exit_group(1)                           = ?    
+\end{verbatim}
