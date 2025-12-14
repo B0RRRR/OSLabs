@@ -1,0 +1,229 @@
+\section{Исходная программа}
+
+\subsection*{Strace Лабораторной работы 1}
+\begin{verbatim}
+execve("./parent", ["./parent"], 0x7ffe01b3e6a0 /* 27 vars */) = 0
+brk(NULL)                               = 0x64ec69cf7000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x742b4faab000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=30327, ...}) = 0
+mmap(NULL, 30327, PROT_READ, MAP_PRIVATE, 3, 0) = 0x742b4faa3000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x742b4f800000
+mmap(0x742b4f828000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x742b4f828000
+mmap(0x742b4f9b0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x742b4f9b0000
+mmap(0x742b4f9ff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x742b4f9ff000
+mmap(0x742b4fa05000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x742b4fa05000
+close(3)                                = 0
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x742b4faa0000
+arch_prctl(ARCH_SET_FS, 0x742b4faa0740) = 0
+set_tid_address(0x742b4faa0a10)         = 19647
+set_robust_list(0x742b4faa0a20, 24)     = 0
+rseq(0x742b4faa1060, 0x20, 0, 0x53053053) = 0
+mprotect(0x742b4f9ff000, 16384, PROT_READ) = 0
+mprotect(0x64ec2c20e000, 4096, PROT_READ) = 0
+mprotect(0x742b4fae3000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x742b4faa3000, 30327)           = 0
+pipe2([3, 4], 0)                        = 0
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0), ...}) = 0
+getrandom("\x85\x78\x9f\xdd\x02\xb7\x3f\x3c", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x64ec69cf7000
+brk(0x64ec69d18000)                     = 0x64ec69d18000
+write(1, "Filename:\n", 10Filename:
+)             = 10
+fstat(0, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0), ...}) = 0
+read(0, input.txt
+"input.txt\n", 1024)            = 10
+openat(AT_FDCWD, "input.txt", O_RDONLY) = 5
+clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x742b4faa0a10) = 19666
+close(4)                                = 0
+close(5)                                = 0
+read(3, "", 4096)                       = 0
+--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=19666, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+close(3)                                = 0
+wait4(-1, NULL, 0, NULL)                = 19666
+lseek(0, -1, SEEK_CUR)                  = -1 ESPIPE (Illegal seek)
+exit_group(0)                           = ?
+\end{verbatim}
+
+
+\subsection*{Strace Лабораторной работы 2}
+\begin{verbatim}
+execve("./matrix_filters", ["./matrix_filters"], 0x7fffcb8c7610 /* 27 vars */) = 0
+brk(NULL)                               = 0x62e18077a000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7ad1baf63000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=30327, ...}) = 0
+mmap(NULL, 30327, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7ad1baf5b000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7ad1bac00000
+mmap(0x7ad1bac28000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7ad1bac28000
+mmap(0x7ad1badb0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x7ad1badb0000
+mmap(0x7ad1badff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x7ad1badff000
+mmap(0x7ad1bae05000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7ad1bae05000
+close(3)                                = 0
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7ad1baf58000
+arch_prctl(ARCH_SET_FS, 0x7ad1baf58740) = 0
+set_tid_address(0x7ad1baf58a10)         = 20086
+set_robust_list(0x7ad1baf58a20, 24)     = 0
+rseq(0x7ad1baf59060, 0x20, 0, 0x53053053) = 0
+mprotect(0x7ad1badff000, 16384, PROT_READ) = 0
+mprotect(0x62e151263000, 4096, PROT_READ) = 0
+mprotect(0x7ad1baf9b000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x7ad1baf5b000, 30327)           = 0
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0), ...}) = 0
+getrandom("\x16\x48\x0f\x99\x97\x9d\x01\xe4", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x62e18077a000
+brk(0x62e18079b000)                     = 0x62e18079b000
+write(1, "\320\230\321\201\320\277\320\276\320\273\321\214\320\267\320\276\320\262\320\260\320\275\320\270\320\265: ./ma"..., 56Использование: ./matrix_filters M N K Tmax
+) = 56
+exit_group(1)                           = ?
+\end{verbatim}
+
+\subsection*{Strace Лабораторной работы 3}
+\begin{verbatim}
+execve("./ipc_program", ["./ipc_program"], 0x7ffc644f3670 /* 27 vars */) = 0
+brk(NULL)                               = 0x5fef289e2000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7a2e6e1b6000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=30327, ...}) = 0
+mmap(NULL, 30327, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7a2e6e1ae000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7a2e6de00000
+mmap(0x7a2e6de28000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7a2e6de28000
+mmap(0x7a2e6dfb0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x7a2e6dfb0000
+mmap(0x7a2e6dfff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x7a2e6dfff000
+mmap(0x7a2e6e005000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7a2e6e005000
+close(3)                                = 0
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7a2e6e1ab000
+arch_prctl(ARCH_SET_FS, 0x7a2e6e1ab740) = 0
+set_tid_address(0x7a2e6e1aba10)         = 20363
+set_robust_list(0x7a2e6e1aba20, 24)     = 0
+rseq(0x7a2e6e1ac060, 0x20, 0, 0x53053053) = 0
+mprotect(0x7a2e6dfff000, 16384, PROT_READ) = 0
+mprotect(0x5fef1a6c0000, 4096, PROT_READ) = 0
+mprotect(0x7a2e6e1ee000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x7a2e6e1ae000, 30327)           = 0
+write(2, "\320\230\321\201\320\277\320\276\320\273\321\214\320\267\320\276\320\262\320\260\320\275\320\270\320\265: ./ip"..., 53Использование: ./ipc_program input_file
+) = 53
+exit_group(1)                           = ?
+\end{verbatim}
+
+\subsection*{Strace Лабораторной работы 4}
+\begin{verbatim}
+\subsection*{Для prog1}
+\begin{verbatim}
+execve("./ipc_program", ["./ipc_program"], 0x7ffcca0c1630 /* 27 vars */) = 0
+brk(NULL)                               = 0x5ea37c54b000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x76058ef9f000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=30255, ...}) = 0
+mmap(NULL, 30255, PROT_READ, MAP_PRIVATE, 3, 0) = 0x76058ef97000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x76058ec00000
+mmap(0x76058ec28000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x76058ec28000
+mmap(0x76058edb0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x76058edb0000
+mmap(0x76058edff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x76058edff000
+mmap(0x76058ee05000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x76058ee05000
+close(3)                                = 0
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x76058ef94000
+arch_prctl(ARCH_SET_FS, 0x76058ef94740) = 0
+set_tid_address(0x76058ef94a10)         = 1482
+set_robust_list(0x76058ef94a20, 24)     = 0
+rseq(0x76058ef95060, 0x20, 0, 0x53053053) = 0
+mprotect(0x76058edff000, 16384, PROT_READ) = 0
+mprotect(0x5ea33ed8e000, 4096, PROT_READ) = 0
+mprotect(0x76058efd7000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x76058ef97000, 30255)           = 0
+write(2, "\320\230\321\201\320\277\320\276\320\273\321\214\320\267\320\276\320\262\320\260\320\275\320\270\320\265: ./ip"..., 53Использование: ./ipc_program input_file
+) = 53
+exit_group(1)                           = ? 
+
+\end{verbatim}
+
+\subsection*{Для prog2}
+\begin{verbatim}
+execve("./prog2", ["./prog2"], 0x7ffc688ed910 /* 27 vars */) = 0
+brk(NULL)                               = 0x62750638a000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7ee77976b000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=30255, ...}) = 0
+mmap(NULL, 30255, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7ee779763000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7ee779400000
+mmap(0x7ee779428000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7ee779428000
+mmap(0x7ee7795b0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x7ee7795b0000
+mmap(0x7ee7795ff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x7ee7795ff000
+mmap(0x7ee779605000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7ee779605000
+close(3)                                = 0
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7ee779760000
+arch_prctl(ARCH_SET_FS, 0x7ee779760740) = 0
+set_tid_address(0x7ee779760a10)         = 9490
+set_robust_list(0x7ee779760a20, 24)     = 0
+rseq(0x7ee779761060, 0x20, 0, 0x53053053) = 0
+mprotect(0x7ee7795ff000, 16384, PROT_READ) = 0
+mprotect(0x6274fb7c5000, 4096, PROT_READ) = 0
+mprotect(0x7ee7797a3000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x7ee779763000, 30255)           = 0
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0), ...}) = 0
+getrandom("\x55\xd2\x7f\xbd\x4f\x65\xd2\xcb", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x62750638a000
+brk(0x6275063ab000)                     = 0x6275063ab000
+write(1, "\320\232\320\276\320\274\320\260\320\275\320\264\321\213:\n", 16Команды:
+) = 16
+write(1, "0 : \320\237\320\265\321\200\320\265\320\272\320\273\321\216\321\207\320\265\320\275\320\270\320\265 \321\200\320"..., 610 : Переключение реализации (1 <-> 2).
+) = 61
+write(1, "1 arg1...: \320\222\321\213\320\267\320\276\320\262 Pi(K).\n", 291 arg1...: Вызов Pi(K).
+) = 29
+write(1, "2 arg1 arg2...: \320\222\321\213\320\267\320\276\320\262 Squar"..., 412 arg1 arg2...: Вызов Square(A, B).
+) = 41
+openat(AT_FDCWD, "./liblib1.so", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=15208, ...}) = 0
+getcwd("/home/b0rus1a/OSLabs/Lab4", 128) = 26
+mmap(NULL, 16400, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7ee779766000
+mmap(0x7ee779767000, 4096, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1000) = 0x7ee779767000
+mmap(0x7ee779768000, 4096, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7ee779768000
+mmap(0x7ee779769000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7ee779769000
+close(3)                                = 0
+mprotect(0x7ee779769000, 4096, PROT_READ) = 0
+write(1, "\320\243\321\201\320\277\320\265\321\210\320\275\320\276 \320\267\320\260\320\263\321\200\321\203\320\266\320\265\320\275\320"..., 58Успешно загружена Реализация 1.
+) = 58
+fstat(0, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0), ...}) = 0
+write(1, ">>> ", 4>>> )                     = 4
+\end{verbatim}
