@@ -1,28 +1,31 @@
-#pragma once
-#include <string>
+#ifndef GAME_H
+#define GAME_H
 
+#include <string>
+#include <vector>
 
 class Game {
 public:
-Game(int players);
+    // *** ИЗМЕНЕНИЕ: Уменьшаем длину кода до 3 ***
+    static const int CODE_LENGTH = 3;
 
-
-bool is_full() const;
-bool started() const;
-
-
-int add_player(int socket);
-int current_player() const;
-
-
-std::string process_guess(const std::string& guess, bool& win);
-
+    Game(int players);
+    
+    // Обрабатывает ход игрока и возвращает строку результата (RESULT B C)
+    std::string process_guess(const std::string& guess, bool& win);
 
 private:
-int max_players;
-int turn;
-std::string secret;
+    std::string secret_code;
+    int num_players;
 
+    // Генерирует секретный код
+    void generate_code();
 
-std::string generate_secret();
+    // Проверяет ход и возвращает пару {bulls, cows}
+    std::pair<int, int> check_guess(const std::string& guess);
+
+    // Проверяет, состоит ли строка из CODE_LENGTH уникальных цифр
+    bool is_valid(const std::string& guess);
 };
+
+#endif // GAME_H

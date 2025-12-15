@@ -1,56 +1,93 @@
-#include "game.h"
+#include <iostream>
 #include <algorithm>
 #include <random>
+#include <chrono>
+#include <sstream>
+#include <set>
 
+#include "game.h"
 
-Game::Game(int players)
-: max_players(players), turn(0), secret(generate_secret()) {}
-
-
-std::string Game::generate_secret() {
-std::string d = "0123456789";
-std::shuffle(d.begin(), d.end(), std::mt19937{std::random_device{}()});
-return d.substr(0, 4);
+Game::Game(int players) : num_players(players) {
+    generate_code();
+    std::cout << "DEBUG: Secret code set to: " << secret_code << std::endl;
 }
 
+bool Game::is_valid(const std::string& guess) {
+    if (guess.length() != CODE_LENGTH) {
+        return false;
+    }
+    
+    for (char c : guess) {
+        if (!isdigit(c)) {
+            return false;
+        }
+    }
 
-bool Game::is_full() const {
-return true; // сервер контролирует количество подключений
+    // Characters must be unique
+    std::set<char> unique_digits(guess.begin(), guess.end());
+    if (unique_digits.size() != CODE_LENGTH) {
+        return false;
+    }
+
+    return true;
 }
 
+void Game::generate_code() {
+    std::vector<int> digits = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(digits.begin(), digits.end(), std::default_random_engine(seed));
+    
+    secret_code = "";
+    
+    
+    int start_index = 0;
+    if (CODE_LENGTH > 1 && digits[0] == 0) {
+        auto it = std::find_if(digits.begin() + 1, digits.end(), [](int d){ return d != 0; });
+        if (it != digits.end()) {
+            std::swap(digits[0], *it);
+        }
+    }
 
-bool Game::started() const {
-return true;
+    for (int i = 0; i < CODE_LENGTH; ++i) {
+        secret_code += std::to_string(digits[i]);
+    }
 }
 
+std::pair<int, int> Game::check_guess(const std::string& guess) {
+    int bulls = 0;
+    int cows = 0;
 
-int Game::add_player(int) {
-return 0;
+    for (int i = 0; i < CODE_LENGTH; ++i) {
+        for (int j = 0; j < CODE_LENGTH; ++j) {
+            if (guess[i] == secret_code[j]) {
+                if (i == j) {
+                    bulls++;
+                } else {
+                    cows++;
+                }
+            }
+        }
+    }
+    return {bulls, cows};
 }
-
-
-int Game::current_player() const {
-return turn;
-}
-
 
 std::string Game::process_guess(const std::string& guess, bool& win) {
-int bulls = 0, cows = 0;
+    win = false;
 
+    if (!is_valid(guess)) {
+        return "RESULT 0 0 (Invalid)";
+    }
 
-for (int i = 0; i < 4; ++i) {
-if (guess[i] == secret[i]) bulls++;
-else if (secret.find(guess[i]) != std::string::npos) cows++;
-}
+    std::pair<int, int> result = check_guess(guess);
+    int bulls = result.first;
+    int cows = result.second;
 
+    if (bulls == CODE_LENGTH) {
+        win = true;
+    }
 
-if (bulls == 4) {
-win = true;
-return "WIN";
-}
-
-
-win = false;
-turn = (turn + 1) % max_players;
-return "RESULT " + std::to_string(bulls) + " " + std::to_string(cows);
+    std::stringstream ss;
+    ss << "RESULT " << bulls << " " << cows;
+    return ss.str();
 }

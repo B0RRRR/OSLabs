@@ -1,0 +1,516 @@
+\section{Исходная программа}
+
+
+\subsection*{Файл game.cpp}
+
+\begin{lstlisting}[language=C,caption={Реализация логики игры},captionpos=b]
+#include <iostream>
+#include <algorithm>
+#include <random>
+#include <chrono>
+#include <sstream>
+#include <set>
+
+#include "game.h"
+
+Game::Game(int players) : num_players(players) {
+    generate_code();
+    std::cout << "DEBUG: Secret code set to: " << secret_code << std::endl;
+}
+
+bool Game::is_valid(const std::string& guess) {
+    if (guess.length() != CODE_LENGTH) {
+        return false;
+    }
+    
+    for (char c : guess) {
+        if (!isdigit(c)) {
+            return false;
+        }
+    }
+
+    // Characters must be unique
+    std::set<char> unique_digits(guess.begin(), guess.end());
+    if (unique_digits.size() != CODE_LENGTH) {
+        return false;
+    }
+
+    return true;
+}
+
+void Game::generate_code() {
+    std::vector<int> digits = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(digits.begin(), digits.end(), std::default_random_engine(seed));
+    
+    secret_code = "";
+    
+    
+    int start_index = 0;
+    if (CODE_LENGTH > 1 && digits[0] == 0) {
+        auto it = std::find_if(digits.begin() + 1, digits.end(), [](int d){ return d != 0; });
+        if (it != digits.end()) {
+            std::swap(digits[0], *it);
+        }
+    }
+
+    for (int i = 0; i < CODE_LENGTH; ++i) {
+        secret_code += std::to_string(digits[i]);
+    }
+}
+
+std::pair<int, int> Game::check_guess(const std::string& guess) {
+    int bulls = 0;
+    int cows = 0;
+
+    for (int i = 0; i < CODE_LENGTH; ++i) {
+        for (int j = 0; j < CODE_LENGTH; ++j) {
+            if (guess[i] == secret_code[j]) {
+                if (i == j) {
+                    bulls++;
+                } else {
+                    cows++;
+                }
+            }
+        }
+    }
+    return {bulls, cows};
+}
+
+std::string Game::process_guess(const std::string& guess, bool& win) {
+    win = false;
+
+    if (!is_valid(guess)) {
+        return "RESULT 0 0 (Invalid)";
+    }
+
+    std::pair<int, int> result = check_guess(guess);
+    int bulls = result.first;
+    int cows = result.second;
+
+    if (bulls == CODE_LENGTH) {
+        win = true;
+    }
+
+    std::stringstream ss;
+    ss << "RESULT " << bulls << " " << cows;
+    return ss.str();
+}
+
+\end{lstlisting}
+
+\subsection*{Файл server.cpp}
+
+\begin{lstlisting}[language=C,caption={Реализация работы сервера.},captionpos=b]
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <iostream>
+#include <vector>
+#include <cstring>
+#include <signal.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <algorithm>
+#include <stdexcept>
+
+#include "game.h"
+
+
+volatile sig_atomic_t keep_running = 1;
+
+void signal_handler(int sig) {
+    if (sig == SIGINT) {
+        keep_running = 0;
+        std::cout << "\nSIGINT received. Shutting down gracefully..." << std::endl;
+    }
+}
+
+void broadcast(const std::vector<int>& clients, const std::string& message) {
+    std::string msg_with_newline = message + "\n";
+    for (int c : clients) {
+        send(c, msg_with_newline.c_str(), msg_with_newline.size(), 0);
+    }
+}
+
+int main(int argc, char* argv[]) {
+    
+    signal(SIGINT, signal_handler);
+
+    const int DEFAULT_PLAYERS = 2;
+    int players_required = DEFAULT_PLAYERS;
+
+    // Read cmd arguments
+    if (argc == 2) {
+        try {
+            int requested_players = std::stoi(argv[1]);
+            
+            if (requested_players > 1) {
+                players_required = requested_players;
+            } else {
+                std::cerr << "Error: Number of players must be greater than 1. Using default (" << DEFAULT_PLAYERS << ")." << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error parsing player count argument. Using default (" << DEFAULT_PLAYERS << ")." << std::endl;
+        }
+    }
+
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd < 0) {
+        perror("Socket creation failed");
+        return 1;
+    }
+
+    // ports/adresses can be used again
+    int opt = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        perror("setsockopt failed");
+        close(server_fd);
+        return 1;
+    }
+
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(5555);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_fd, (sockaddr*)&addr, sizeof(addr)) < 0) {
+        perror("Bind failed (port 5555 likely in use)");
+        close(server_fd);
+        return 1;
+    }
+
+    if (listen(server_fd, 5) < 0) {
+        perror("Listen failed");
+        close(server_fd);
+        return 1;
+    }
+
+    std::cout << "Server started on port 5555. Required players: " << players_required << ". Waiting for clients..." << std::endl;
+
+    std::vector<int> clients;
+
+    // Find players
+    while ((int)clients.size() < players_required && keep_running) {
+        fd_set master_set;
+        FD_ZERO(&master_set);
+        FD_SET(server_fd, &master_set);
+        
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        if (select(server_fd + 1, &master_set, nullptr, nullptr, &timeout) < 0) {
+            if (keep_running) perror("Select error during connect");
+            break;
+        }
+        
+        if (FD_ISSET(server_fd, &master_set)) {
+            int c = accept(server_fd, nullptr, nullptr);
+            if (c < 0) continue;
+            
+            clients.push_back(c);
+            std::cout << "Client connected: socket = " << c << std::endl;
+
+            std::string id_msg = "YOUR_ID " + std::to_string(c);
+            send(c, id_msg.c_str(), id_msg.size(), 0); 
+            
+            std::string wait_msg = "WAIT " + std::to_string(players_required - clients.size());
+            send(c, wait_msg.c_str(), wait_msg.size(), 0);
+        }
+    }
+    
+    // Game process
+    if ((int)clients.size() == players_required && keep_running) {
+        
+        std::cout << "All players connected. Starting game" << std::endl;
+        Game game(players_required);
+        bool win = false; 
+        char buf[128];
+        
+        broadcast(clients, "START");
+
+        while (!win && keep_running) {
+            for (int i = 0; i < players_required; ++i) {
+                if (!keep_running) break;
+
+                int sock = clients[i];
+                
+                std::string turn_msg = "TURN " + std::to_string(sock);
+                broadcast(clients, turn_msg);
+                
+                fd_set read_set;
+                FD_ZERO(&read_set);
+                FD_SET(sock, &read_set);
+                
+                struct timeval timeout_turn;
+                timeout_turn.tv_sec = 60;
+                timeout_turn.tv_usec = 0;
+                
+                int ready_fds = select(sock + 1, &read_set, nullptr, nullptr, &timeout_turn);
+                
+                if (!keep_running) break;
+                
+                if (ready_fds <= 0) {
+                    std::cout << "Client " << sock << " timed out or select error. Aborting." << std::endl;
+                    broadcast(clients, "SERVER_SHUTDOWN");
+                    keep_running = 0; 
+                    break; 
+                }
+
+                memset(buf, 0, sizeof(buf));
+                int r = recv(sock, buf, sizeof(buf)-1, 0);
+                
+                if (r <= 0) {
+                    std::cout << "Client " << sock << " disconnected unexpectedly (r=" << r << ")." << std::endl;
+                    broadcast(clients, "SERVER_SHUTDOWN"); 
+                    keep_running = 0; 
+                    break;
+                }
+                
+                std::string guess(buf);
+                guess.erase(std::remove_if(guess.begin(), guess.end(), [](char c){ return c == '\n' || c == '\r'; }), guess.end());
+                
+                if (guess == "QUIT") {
+                    std::cout << "Client " << sock << " requested QUIT. Aborting game." << std::endl;
+                    broadcast(clients, "SERVER_SHUTDOWN");
+                    keep_running = 0;
+                    break;
+                }
+
+                std::cout << "Received guess from client " << sock << ": " << guess << std::endl;
+
+                std::string resp = game.process_guess(guess, win);
+                
+                broadcast(clients, resp);
+
+                if (win) {
+                    std::string win_msg = "WIN " + std::to_string(sock);
+                    broadcast(clients, win_msg);
+                    break;
+                }
+            }
+        }
+    } else {
+        broadcast(clients, "SERVER_SHUTDOWN");
+    }
+
+    std::cout << "Game over." << std::endl;
+    
+    for(int c : clients) {
+        close(c);
+    }
+    
+    close(server_fd);
+    std::cout << "Server successfully shut down." << std::endl;
+    
+    return 0;
+}
+
+\end{lstlisting}
+
+\subsection*{Файл client.cpp}
+
+\begin{lstlisting}[language=C,caption={Реализация работы клиента.},captionpos=b]
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <iostream>
+#include <string>
+#include <cstring>
+#include <algorithm>
+#include <vector>
+#include <sstream>
+
+// str -> characters
+std::vector<std::string> split(const std::string &s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+void trim_message(std::string& str) {
+    str.erase(std::remove_if(str.begin(), str.end(), [](char c){ return c == '\n' || c == '\r'; }), str.end());
+}
+
+int main() {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("Socket creation failed");
+        return 1;
+    }
+
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(5555);
+    
+    if (inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) <= 0) {
+        perror("Invalid address / Address not supported");
+        close(sock);
+        return 1;
+    }
+
+    std::cout << "Connecting to server..." << std::endl;
+
+    if (connect(sock, (sockaddr*)&addr, sizeof(addr)) < 0) {
+        perror("Connection Failed.");
+        close(sock);
+        return 1;
+    }
+    
+    int server_client_id = -1; 
+
+    std::cout << "Connected! Waiting for server ID..." << std::endl;
+
+    char buf[128];
+    while (true) {
+        memset(buf, 0, sizeof(buf));
+        
+        int r = recv(sock, buf, sizeof(buf)-1, 0);
+        if (r <= 0) {
+            std::cout << "\nServer disconnected or error occurred." << std::endl;
+            break;
+        }
+        
+        std::string msg(buf);
+        trim_message(msg);
+        
+        std::vector<std::string> parts = split(msg, ' ');
+        std::string command = parts[0];
+
+        
+        if (command == "YOUR_ID") {
+            server_client_id = std::stoi(parts[1]);
+            std::cout << "Server assigned you ID: " << server_client_id << std::endl;
+        }
+        else if (command == "WAIT") {
+            std::cout << "Server: Waiting for " << parts[1] << " more player(s)..." << std::endl;
+        } 
+        else if (command == "START") {
+            std::cout << "\nGAME STARTED \n";
+        }
+        else if (command == "TURN") {
+            int turn_id = std::stoi(parts[1]);
+            
+            if (turn_id == server_client_id) {
+                std::cout << "\n>>> YOUR TURN (" << server_client_id << ") <<<" << std::endl;
+                std::string guess;
+                
+                while (true) {
+                    std::cout << "Enter your guess (3 unique digits) or QUIT: " << std::flush;
+                    std::cin >> guess;
+                    
+                    if (guess == "QUIT") {
+                        send(sock, "QUIT\n", 5, 0);
+                        goto exit_cleanup; 
+                    }
+                    
+                    std::string guess_with_newline = guess + "\n";
+                    send(sock, guess_with_newline.c_str(), guess_with_newline.size(), 0);
+                    break;
+                }
+            } else {
+                std::cout << "Waiting for Player " << turn_id << "'s guess...\n";
+            }
+        }
+        else if (command == "RESULT") {
+            std::cout << "Result: Bulls: " << parts[1] << ", Cows: " << parts[2] << "\n";
+        }
+        else if (command == "WIN") {
+            std::cout << "\nGAME OVER Player " << parts[1] << " won the game!\n";
+            break;
+        }
+        else if (command == "SERVER_SHUTDOWN") {
+             std::cout << "\nServer has been shut down. Exiting.\n";
+             break;
+        }
+        else {
+            std::cout << "Server: " << msg << std::endl;
+        }
+    }
+
+exit_cleanup:
+    std::cout << "Closing socket..." << std::endl;
+    close(sock);
+    return 0;
+}
+
+\end{lstlisting}
+
+\subsection*{Файл main\_static.c}
+
+\begin{lstlisting}[language=C,caption={Статическая линковка},captionpos=b]
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../inc/contract.h"
+
+
+void process_command(int func_id, char* args[]) {
+    if (func_id == 1) {
+        if (args[0] == NULL) {
+            printf("Error(K).\n");
+            return;
+        }
+        int K = atoi(args[0]);
+        if (K <= 0) {
+            printf("Error\n");
+            return;
+        }
+        float result = Pi(K);
+        printf("Result Pi(%d) = %.8f\n", K, result);
+    } 
+
+    else if (func_id == 2) {
+        if (args[0] == NULL || args[1] == NULL) {
+            printf("Error (A, B).\n");
+            return;
+        }
+        float A = atof(args[0]);
+        float B = atof(args[1]);
+        
+        float result = Square(A, B);
+        printf("Square(%.2f, %.2f) = %.2f\n", A, B, result);
+    } else {
+        printf("Unknown \n");
+    }
+}
+
+int main() {
+    char line[256];
+    printf("Realisation 1 (L / Rectangle)\n");
+
+    while (1) {
+        printf(">>> ");
+        if (fgets(line, sizeof(line), stdin) == NULL) break;
+        
+        char *token;
+        char *tokens[3] = {NULL, NULL, NULL};
+        int token_count = 0;
+
+        token = strtok(line, " \n");
+        while (token != NULL && token_count < 3) {
+            tokens[token_count++] = token;
+            token = strtok(NULL, " \n");
+        }
+        
+        if (token_count == 0 || strcmp(tokens[0], "exit") == 0) break;
+
+        if (token_count >= 1) {
+            int func_id = atoi(tokens[0]);
+            if (func_id != 0) {
+                process_command(func_id, &tokens[1]);
+            } else {
+                printf("Error '0' \n");
+            }
+        }
+    }
+
+    return 0;
+}
+
+\end{lstlisting}

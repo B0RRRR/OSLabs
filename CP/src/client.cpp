@@ -7,7 +7,7 @@
 #include <vector>
 #include <sstream>
 
-// Разбивка строки на слова
+// str -> characters
 std::vector<std::string> split(const std::string &s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
@@ -18,7 +18,6 @@ std::vector<std::string> split(const std::string &s, char delimiter) {
     return tokens;
 }
 
-// Удаление пробельных символов в конце строки (для clean messages)
 void trim_message(std::string& str) {
     str.erase(std::remove_if(str.begin(), str.end(), [](char c){ return c == '\n' || c == '\r'; }), str.end());
 }
@@ -40,15 +39,14 @@ int main() {
         return 1;
     }
 
-    std::cout << "Connecting to server (127.0.0.1:5555)..." << std::endl;
+    std::cout << "Connecting to server..." << std::endl;
 
     if (connect(sock, (sockaddr*)&addr, sizeof(addr)) < 0) {
-        perror("Connection Failed. Is the server running?");
+        perror("Connection Failed.");
         close(sock);
         return 1;
     }
     
-    // Переменная для хранения ID, который присвоил сервер
     int server_client_id = -1; 
 
     std::cout << "Connected! Waiting for server ID..." << std::endl;
@@ -57,10 +55,9 @@ int main() {
     while (true) {
         memset(buf, 0, sizeof(buf));
         
-        // Блокировка на recv: ожидание сообщения от сервера
         int r = recv(sock, buf, sizeof(buf)-1, 0);
         if (r <= 0) {
-            std::cout << "\nServer disconnected or error occurred. Exiting." << std::endl;
+            std::cout << "\nServer disconnected or error occurred." << std::endl;
             break;
         }
         
@@ -70,7 +67,6 @@ int main() {
         std::vector<std::string> parts = split(msg, ' ');
         std::string command = parts[0];
 
-        // --- Обработка команд ---
         
         if (command == "YOUR_ID") {
             server_client_id = std::stoi(parts[1]);
@@ -80,33 +76,29 @@ int main() {
             std::cout << "Server: Waiting for " << parts[1] << " more player(s)..." << std::endl;
         } 
         else if (command == "START") {
-            std::cout << "\n--- GAME STARTED ---\n";
+            std::cout << "\nGAME STARTED \n";
         }
         else if (command == "TURN") {
             int turn_id = std::stoi(parts[1]);
             
             if (turn_id == server_client_id) {
-                // ЭТО НАШ ХОД
                 std::cout << "\n>>> YOUR TURN (" << server_client_id << ") <<<" << std::endl;
                 std::string guess;
                 
                 while (true) {
-                    std::cout << "Enter your guess (4 unique digits) or QUIT: " << std::flush;
+                    std::cout << "Enter your guess (3 unique digits) or QUIT: " << std::flush;
                     std::cin >> guess;
                     
-                    // Проверка на команду выхода
                     if (guess == "QUIT") {
-                        send(sock, "QUIT\n", 5, 0); // Отправляем сигнал серверу
+                        send(sock, "QUIT\n", 5, 0);
                         goto exit_cleanup; 
                     }
                     
-                    // Отправляем ход с символом новой строки
                     std::string guess_with_newline = guess + "\n";
                     send(sock, guess_with_newline.c_str(), guess_with_newline.size(), 0);
                     break;
                 }
             } else {
-                // ЖДЕМ ХОДА ДРУГОГО ИГРОКА
                 std::cout << "Waiting for Player " << turn_id << "'s guess...\n";
             }
         }
@@ -114,11 +106,11 @@ int main() {
             std::cout << "Result: Bulls: " << parts[1] << ", Cows: " << parts[2] << "\n";
         }
         else if (command == "WIN") {
-            std::cout << "\n!!! GAME OVER !!! Player " << parts[1] << " won the game!\n";
+            std::cout << "\nGAME OVER Player " << parts[1] << " won the game!\n";
             break;
         }
         else if (command == "SERVER_SHUTDOWN") {
-             std::cout << "\nServer has been shut down by the administrator. Exiting.\n";
+             std::cout << "\nServer has been shut down. Exiting.\n";
              break;
         }
         else {
