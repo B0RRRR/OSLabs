@@ -440,77 +440,151 @@ exit_cleanup:
 
 \end{lstlisting}
 
-\subsection*{Файл main\_static.c}
+\section{Вывод strace}
 
-\begin{lstlisting}[language=C,caption={Статическая линковка},captionpos=b]
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+\subsection*{Для server}
+\begin{verbatim}
+execve("./server", ["./server"], 0x7ffd0cca2c30 /* 26 vars */) = 0
+brk(NULL)                               = 0x5bd75e7cd000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7d9db9d8f000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=32015, ...}) = 0
+mmap(NULL, 32015, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7d9db9d87000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=2592224, ...}) = 0
+mmap(NULL, 2609472, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7d9db9a00000
+mmap(0x7d9db9a9d000, 1343488, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x9d000) = 0x7d9db9a9d000
+mmap(0x7d9db9be5000, 552960, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1e5000) = 0x7d9db9be5000
+mmap(0x7d9db9c6c000, 57344, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x26b000) = 0x7d9db9c6c000
+mmap(0x7d9db9c7a000, 12608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7d9db9c7a000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=183024, ...}) = 0
+mmap(NULL, 185256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7d9db9d59000
+mmap(0x7d9db9d5d000, 147456, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4000) = 0x7d9db9d5d000
+mmap(0x7d9db9d81000, 16384, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7d9db9d81000
+mmap(0x7d9db9d85000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2b000) = 0x7d9db9d85000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7d9db9600000
+mmap(0x7d9db9628000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7d9db9628000
+mmap(0x7d9db97b0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x7d9db97b0000
+mmap(0x7d9db97ff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x7d9db97ff000
+mmap(0x7d9db9805000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7d9db9805000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=952616, ...}) = 0
+mmap(NULL, 950296, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7d9db9917000
+mmap(0x7d9db9927000, 520192, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x10000) = 0x7d9db9927000
+mmap(0x7d9db99a6000, 360448, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8f000) = 0x7d9db99a6000
+mmap(0x7d9db99fe000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe7000) = 0x7d9db99fe000
+close(3)                                = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7d9db9d57000
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7d9db9d54000
+arch_prctl(ARCH_SET_FS, 0x7d9db9d54740) = 0
+set_tid_address(0x7d9db9d54a10)         = 22169
+set_robust_list(0x7d9db9d54a20, 24)     = 0
+rseq(0x7d9db9d55060, 0x20, 0, 0x53053053) = 0
+mprotect(0x7d9db97ff000, 16384, PROT_READ) = 0
+mprotect(0x7d9db99fe000, 4096, PROT_READ) = 0
+mprotect(0x7d9db9d85000, 4096, PROT_READ) = 0
+mprotect(0x7d9db9c6c000, 45056, PROT_READ) = 0
+mprotect(0x5bd74360f000, 4096, PROT_READ) = 0
+mprotect(0x7d9db9dc7000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x7d9db9d87000, 32015)           = 0
+futex(0x7d9db9c7a7bc, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+getrandom("\x84\x1f\x8e\xb9\xcb\x5b\xf0\xa9", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x5bd75e7cd000
+brk(0x5bd75e7ee000)                     = 0x5bd75e7ee000
+rt_sigaction(SIGINT, {sa_handler=0x5bd743604a0a, sa_mask=[INT], sa_flags=SA_RESTORER|SA_RESTART, sa_restorer=0x7d9db9645330}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+socket(AF_INET, SOCK_STREAM, IPPROTO_IP) = 3
+setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+bind(3, {sa_family=AF_INET, sin_port=htons(5555), sin_addr=inet_addr("0.0.0.0")}, 16) = 0
+listen(3, 5)                            = 0
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0), ...}) = 0
+write(1, "Server started on port 5555. Req"..., 73Server started on port 5555. Required players: 2. Waiting for clients...
+) = 73
+\end{verbatim}
 
-#include "../inc/contract.h"
-
-
-void process_command(int func_id, char* args[]) {
-    if (func_id == 1) {
-        if (args[0] == NULL) {
-            printf("Error(K).\n");
-            return;
-        }
-        int K = atoi(args[0]);
-        if (K <= 0) {
-            printf("Error\n");
-            return;
-        }
-        float result = Pi(K);
-        printf("Result Pi(%d) = %.8f\n", K, result);
-    } 
-
-    else if (func_id == 2) {
-        if (args[0] == NULL || args[1] == NULL) {
-            printf("Error (A, B).\n");
-            return;
-        }
-        float A = atof(args[0]);
-        float B = atof(args[1]);
-        
-        float result = Square(A, B);
-        printf("Square(%.2f, %.2f) = %.2f\n", A, B, result);
-    } else {
-        printf("Unknown \n");
-    }
-}
-
-int main() {
-    char line[256];
-    printf("Realisation 1 (L / Rectangle)\n");
-
-    while (1) {
-        printf(">>> ");
-        if (fgets(line, sizeof(line), stdin) == NULL) break;
-        
-        char *token;
-        char *tokens[3] = {NULL, NULL, NULL};
-        int token_count = 0;
-
-        token = strtok(line, " \n");
-        while (token != NULL && token_count < 3) {
-            tokens[token_count++] = token;
-            token = strtok(NULL, " \n");
-        }
-        
-        if (token_count == 0 || strcmp(tokens[0], "exit") == 0) break;
-
-        if (token_count >= 1) {
-            int func_id = atoi(tokens[0]);
-            if (func_id != 0) {
-                process_command(func_id, &tokens[1]);
-            } else {
-                printf("Error '0' \n");
-            }
-        }
-    }
-
-    return 0;
-}
-
-\end{lstlisting}
+\subsection*{Для client}
+\begin{verbatim}
+execve("./client", ["./client"], 0x7ffe6e174840 /* 26 vars */) = 0
+brk(NULL)                               = 0x572422526000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7627ec662000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=32015, ...}) = 0
+mmap(NULL, 32015, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7627ec65a000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=2592224, ...}) = 0
+mmap(NULL, 2609472, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7627ec200000
+mmap(0x7627ec29d000, 1343488, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x9d000) = 0x7627ec29d000
+mmap(0x7627ec3e5000, 552960, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1e5000) = 0x7627ec3e5000
+mmap(0x7627ec46c000, 57344, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x26b000) = 0x7627ec46c000
+mmap(0x7627ec47a000, 12608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7627ec47a000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=183024, ...}) = 0
+mmap(NULL, 185256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7627ec62c000
+mmap(0x7627ec630000, 147456, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4000) = 0x7627ec630000
+mmap(0x7627ec654000, 16384, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7627ec654000
+mmap(0x7627ec658000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2b000) = 0x7627ec658000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7627ebe00000
+mmap(0x7627ebe28000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7627ebe28000
+mmap(0x7627ebfb0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x7627ebfb0000
+mmap(0x7627ebfff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x7627ebfff000
+mmap(0x7627ec005000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7627ec005000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=952616, ...}) = 0
+mmap(NULL, 950296, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7627ec543000
+mmap(0x7627ec553000, 520192, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x10000) = 0x7627ec553000
+mmap(0x7627ec5d2000, 360448, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8f000) = 0x7627ec5d2000
+mmap(0x7627ec62a000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe7000) = 0x7627ec62a000
+close(3)                                = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7627ec541000
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7627ec53e000
+arch_prctl(ARCH_SET_FS, 0x7627ec53e740) = 0
+set_tid_address(0x7627ec53ea10)         = 22568
+set_robust_list(0x7627ec53ea20, 24)     = 0
+rseq(0x7627ec53f060, 0x20, 0, 0x53053053) = 0
+mprotect(0x7627ebfff000, 16384, PROT_READ) = 0
+mprotect(0x7627ec62a000, 4096, PROT_READ) = 0
+mprotect(0x7627ec658000, 4096, PROT_READ) = 0
+mprotect(0x7627ec46c000, 45056, PROT_READ) = 0
+mprotect(0x5723fc0a3000, 4096, PROT_READ) = 0
+mprotect(0x7627ec69a000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x7627ec65a000, 32015)           = 0
+futex(0x7627ec47a7bc, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+getrandom("\x00\x6a\xcb\xe1\xdf\xdf\x81\xed", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x572422526000
+brk(0x572422547000)                     = 0x572422547000
+socket(AF_INET, SOCK_STREAM, IPPROTO_IP) = 3
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0), ...}) = 0
+write(1, "Connecting to server...\n", 24Connecting to server...
+) = 24
+connect(3, {sa_family=AF_INET, sin_port=htons(5555), sin_addr=inet_addr("127.0.0.1")}, 16) = 0
+write(1, "Connected! Waiting for server ID"..., 36Connected! Waiting for server ID...
+) = 36
+\end{verbatim}
