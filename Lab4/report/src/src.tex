@@ -9,21 +9,21 @@
 \begin{enumerate}
     \item \textbf{Функция 1 (Рассчет $\pi$):} \texttt{float Pi(int K)}
     \begin{itemize}
-        \item Реализация 1 (\texttt{liblib1.so}): \textbf{Ряд Лейбница}.
-        \item Реализация 2 (\texttt{liblib2.so}): \textbf{Формула Валлиса}.
+        \item Реализация 1 (\texttt{liblib1.so}): Ряд Лейбница.
+        \item Реализация 2 (\texttt{liblib2.so}): Формула Валлиса.
     \end{itemize}
     \item \textbf{Функция 2 (Площадь):} \texttt{float Square(float A, float B)}
     \begin{itemize}
-        \item Реализация 1 (\texttt{liblib1.so}): Площадь \textbf{прямоугольника} ($A \cdot B$).
-        \item Реализация 2 (\texttt{liblib2.so}): Площадь \textbf{прямоугольного треугольника} ($\frac{1}{2} A \cdot B$).
+        \item Реализация 1 (\texttt{liblib1.so}): Площадь прямоугольника ($A \cdot B$).
+        \item Реализация 2 (\texttt{liblib2.so}): Площадь прямоугольного треугольника ($\frac{1}{2} A \cdot B$).
     \end{itemize}
 \end{enumerate}
 
 \subsection*{Методы Использования Библиотек}
 
 \begin{enumerate}
-    \item \textbf{Программа №1 (Ранняя Линковка / Static Linking):} Исполняемый файл \texttt{prog1} линкуется с \texttt{liblib1.so} на этапе компиляции с использованием флага \texttt{-l}. Зависимость фиксируется в заголовке программы.
-    \item \textbf{Программа №2 (Поздняя Линковка / Dynamic Loading):} Исполняемый файл \texttt{prog2} использует системный интерфейс (функции \texttt{dlopen}, \texttt{dlsym}, \texttt{dlclose} из \texttt{dlfcn.h} с линковкой \texttt{-ldl}) для загрузки и выгрузки \texttt{liblib1.so} или \texttt{liblib2.so} непосредственно во время работы программы.
+    \item \textbf{Программа №1 (Ранняя Линковка):} Исполняемый файл \texttt{prog1} линкуется с \texttt{liblib1.so} на этапе компиляции с использованием флага \texttt{-l}. Зависимость фиксируется в заголовке программы.
+    \item \textbf{Программа №2 (Поздняя Линковка):} Исполняемый файл \texttt{prog2} использует системный интерфейс (функции \texttt{dlopen}, \texttt{dlsym}, \texttt{dlclose} из \texttt{dlfcn.h} с линковкой \texttt{-ldl}) для загрузки и выгрузки \texttt{liblib1.so} или \texttt{liblib2.so} непосредственно во время работы программы.
 \end{enumerate}
 
 
@@ -32,13 +32,13 @@
 \dirtree{%
 .1 lab4/.
 .2 inc/.
-.3 contract.h (Общий контракт).
+.3 contract.h.
 .2 src/.
-.3 lib1.c (Реализация 1: Лейбниц, Прямоугольник).
-.3 lib2.c (Реализация 2: Валлис, Треугольник).
-.3 main\_static.c (Тестовая программа №1: Ранняя линковка).
-.3 main\_dynamic.c (Тестовая программа №2: Поздняя линковка).
-.2 Makefile (Скрипт сборки).
+.3 lib1.c.
+.3 lib2.c.
+.3 main\_static.c.
+.3 main\_dynamic.c.
+.2 Makefile.
 }
 
 \vspace{5mm}
@@ -47,23 +47,21 @@
 
 \subsection*{Файл \texttt{inc/contract.h}}
 
-\textbf{Назначение:} Определяет сигнатуры функций \texttt{Pi(int K)} и \texttt{Square(float A, float B)}, создавая общий интерфейс, который должны реализовать обе динамические библиотеки.
+Определяет сигнатуры функций \texttt{Pi(int K)} и \texttt{Square(float A, float B)}, создавая общий интерфейс, который должны реализовать обе динамические библиотеки.
 
 \subsection*{Файл \texttt{src/lib1.c} (Реализация 1)}
 
-\textbf{Назначение:} Реализует функции контракта, используя Ряд Лейбница для расчета $\pi$ и формулу площади прямоугольника.
-
-\textbf{Особенности сборки:} Компилируется с флагами \texttt{-fPIC} (Position Independent Code) и \texttt{-shared} для создания динамической библиотеки \texttt{liblib1.so}.
+Реализует функции контракта, используя Ряд Лейбница для расчета $\pi$ и формулу площади прямоугольника.
+Компилируется с флагами \texttt{-fPIC} (Position Independent Code) и \texttt{-shared} для создания динамической библиотеки \texttt{liblib1.so}.
 
 \subsection*{Файл \texttt{src/lib2.c} (Реализация 2)}
 
-\textbf{Назначение:} Реализует функции контракта, используя Формулу Валлиса для расчета $\pi$ и формулу площади прямоугольного треугольника.
-
-\textbf{Особенности сборки:} Компилируется с флагами \texttt{-fPIC} и \texttt{-shared} для создания динамической библиотеки \texttt{liblib2.so}.
+Реализует функции контракта, используя Формулу Валлиса для расчета $\pi$ и формулу площади прямоугольного треугольника.
+Компилируется с флагами \texttt{-fPIC} и \texttt{-shared} для создания динамической библиотеки \texttt{liblib2.so}.
 
 \subsection*{Файл \texttt{src/main\_static.c} (Программа №1)}
 
-\textbf{Назначение:} Тестовая программа, демонстрирующая использование библиотеки через \textbf{раннюю линковку}.
+Тестовая программа, демонстрирующая использование библиотеки через раннюю линковку.
 
 \textbf{Логика:}
 \begin{itemize}
